@@ -66,8 +66,8 @@
         ],
         "commandToExecute": "[variables('commandToExecute')]"
       },
-      "protectedSettings": {
-        "storageAccountName": "[parameters('customScriptStorageAccountName')]",
+      "protectedSettings": {}]",
+       
        
       }
     }
