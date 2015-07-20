@@ -1,0 +1,75 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    
+    
+    "customScriptStorageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Azure Storage Account where the custom script is located"
+      }
+    },
+    "customScriptFileUri": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Storage Uri of the custom script file e.g. https://test.blob.core.windows.net/scripts/test.ps1"
+      }
+    },
+    "customScriptFileToRun": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the script to be run on the VM"
+      }
+    },
+    "customScriptStorageAccountResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Resource Group of the storage account containing the storage account which contains the script"
+      }
+    }
+  },
+  "variables": {
+    "storageAccountType": "Standard_LRS",
+    "publicIPAddressName": "keysPubIP",
+    "publicIPAddressType": "Dynamic",
+    "virtualNetworkName": "keysVNET",
+	"vmName" : "dinorex",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "vnetAddressPrefix": "10.0.0.0/16",
+    "subnet1Prefix": "10.0.0.0/24",
+	"location": "west europe",   
+    "nicName": "keysNIC",
+    "imagePublisher": "MicrosoftWindowsServer",
+    "imageOffer": "WindowsServer",
+    "imageSKU": "2012-R2-Datacenter",
+    "vmExtensionName": "keysExtension",
+    "accountid": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',parameters('customScriptStorageAccountResourceGroup'),'/providers/','Microsoft.Storage/storageAccounts/', parameters('customScriptStorageAccountName'))]",
+    "commandToExecute": "[concat('powershell.exe -File', ' ', parameters('customScriptFileToRun'), ' ', 'testfile.txt', ' ', 'testfolder')]"
+  },
+  
+  "resources": [{
+    "type": "Microsoft.Compute/virtualMachines/extensions",
+    "name": "[concat(variables('vmName'),'/', variables('vmExtensionName'))]",
+    "apiVersion": "2015-05-01-preview",
+    "location": "[variables('location')]",
+    
+    
+    "properties": {
+      "publisher": "Microsoft.Compute",
+      "type": "CustomScriptExtension",
+      "typeHandlerVersion": "1.3",
+      "autoUpgradeMinorVersion": "true",
+      "settings": {
+        "fileUris": [
+          "[parameters('customScriptFileUri')]"
+        ],
+        "commandToExecute": "[variables('commandToExecute')]"
+      },
+      "protectedSettings": {
+        "storageAccountName": "[parameters('customScriptStorageAccountName')]",
+       
+      }
+    }
+  }]
+}
