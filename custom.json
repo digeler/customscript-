@@ -55,21 +55,20 @@
     "location": "[variables('location')]",
     
     
-    "properties": {
+      "properties": {
       "publisher": "Microsoft.Compute",
       "type": "CustomScriptExtension",
-      "typeHandlerVersion": "1.3",
+      "typeHandlerVersion": "1.4",
       "autoUpgradeMinorVersion": "true",
       "settings": {
         "fileUris": [
           "[parameters('customScriptFileUri')]"
         ],
+		
         "commandToExecute": "[variables('commandToExecute')]"
-      },
-      "protectedSettings": {}]",
-       
-       
+        
       }
     }
   }]
 }
+
