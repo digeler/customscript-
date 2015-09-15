@@ -5,23 +5,9 @@
 
     },
     "variables": {
-        "location": "west europe",
-        "imagePublisher": "MicrosoftWindowsServer",
-        "imageOffer": "WindowsServer",
-        "OSDiskName": "osdiskforwindowssimple",
-        "nicName": "myVMNic",
-        "addressPrefix": "10.0.0.0/16",
-        "subnetName": "Subnet",
-        "subnetPrefix": "10.0.0.0/24",
-        "storageAccountType": "Standard_LRS",
-        "publicIPAddressName": "myPublicIP",
-        "publicIPAddressType": "Dynamic",
-        "vmStorageAccountContainerName": "vhds",
-        "vmName": "omstest",
-        "vmSize": "Standard_D1",
-        "virtualNetworkName": "MyVNET",
-        "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
-        "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]"
+        "location": "west europe",        
+        "vmName": "omstest"
+        
     },
     "resources": [
         {
@@ -31,22 +17,23 @@
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "name": "[concat(variables('vmname'),'/MicrosoftMonitoringAgent')]",
             "location": "[variables('location')]",
-            
-            
+
+
             "properties": {
                 "publisher": "Microsoft.EnterpriseCloud.Monitoring",
                 "type": "MicrosoftMonitoringAgent",
                 "typeHandlerVersion": "1.0",
                 "settings": {
-                    "workspace_name": "65019ff5-f55d-4f96-bcfb-89a31a12bac8",
-                    "workspace_key": "Tpi/0k6JpC7MUvDj9U3kDpuGQkLP6B+hucKK6kczfWeypAAElZxegjo1NwQRgZ4Tn0wDCdGbs3A7/pvnuKFctg=="
+                    "workspaceId": "65019ff5-f55d-4f96-bcfb-89a31a12bac8"
+                },
+                "protectedSettings": {
+                    "workspaceKey": "***********************************************"
                 }
-            }
 
+            }
         }
     ]
-      }
+}
     
   
-
 
