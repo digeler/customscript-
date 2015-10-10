@@ -1,0 +1,216 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "dinor",
+            "metadata": {
+                "description": "User name for the Virtual Machine."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "defaultValue": "Corp123!",
+            "metadata": {
+                "description": "Password for the Virtual Machine."
+            }
+        },
+        "dnsPrefixNameForPublicIP": {
+            "type": "string",
+            "defaultValue": "dincrntest",
+            "metadata": {
+                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+            }
+        },
+        "vmCount": {
+            "type": "int",
+            "defaultValue": 1
+        },
+        "virtualNetworkName": {
+            "type": "string",
+            "defaultValue": "cernetwork",
+            "metadata": {
+                "description": "Virtual Network Name"
+            }
+        },
+        "vmNamePrefix": {
+            "type": "string",
+            "defaultValue": "cernvm",
+            "metadata": {
+                "description": "Virtual Machine Name Prefix"
+            }
+        },
+        "vmSize": {
+            "type": "string",
+            "defaultValue": "Standard_A0",
+            "metadata": {
+                "description": "Virtual Machine Size"
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "west europe",
+            "metadata": {
+                "description": "Location"
+            }
+        }
+    },
+    "variables": {
+        "addressPrefix": "10.0.0.0/16",
+
+        "imageOffer": "CentOS",
+        "imagePublisher": "OpenLogic",
+        "nicName": "NIC",
+        "OSDiskName": "ucernvm",
+        "location": "westeurope",
+        "publicIPAddressType": "Dynamic",
+        "newStorageAccountName" :  "dinimagetest",
+        "storageAccountType": "Standard_LRS",
+        "userImageStorageContainerName": "vhds",
+        "osType": "linux",
+        "userImageVhdName": "ucernvm.vhd",
+        "subnetName": "Subnet",
+        "subnetPrefix": "10.0.0.0/24",
+        "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+        "vmStorageAccountContainerName": "vhds1",
+        "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',parameters('virtualNetworkName'))]",
+        "userImageName": "https://dinimagetest.blob.core.windows.net/vhds/ucernvm.vhd"
+
+    },
+    "resources": [
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[concat(parameters('dnsPrefixNameForPublicIP'),copyIndex())]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "displayName": "PublicIPAddress"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+                "dnsSettings": {
+                    "domainNameLabel": "[concat(parameters('dnsPrefixNameForPublicIP'),copyIndex())]"
+                }
+            },
+            "copy": {
+                "name": "publicIpCopy",
+                "count": "[parameters('vmCount')]"
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[parameters('virtualNetworkName')]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "displayName": "VirtualNetwork"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefix')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat(variables('nicName'),copyIndex())]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "displayName": "NetworkInterface"
+            },
+            "dependsOn": [
+                
+                "[concat('Microsoft.Network/publicIPAddresses/', concat(parameters('dnsPrefixNameForPublicIP'),copyIndex()))]",
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[concat('ipconfig', copyIndex())]",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',concat(parameters('dnsPrefixNameForPublicIP'),copyIndex()))]"
+                            },
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            },
+            "copy": {
+                "name": "nicCopy",
+                "count": "[parameters('vmCount')]"
+            }
+        },
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Compute/virtualMachines",
+            "copy": {
+                "name": "nodeCopy",
+                "count": "[parameters('vmCount')]"
+            },
+            "dependsOn": [
+                
+                "[concat('Microsoft.Network/networkInterfaces/', concat(variables('nicName'),copyIndex()))]"
+            ],
+            "location": "[parameters('location')]",
+            "name": "[concat(parameters('vmNamePrefix'),copyIndex())]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "osProfile": {
+                    "computername": "[concat(parameters('vmNamePrefix'),copyIndex())]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "storageProfile": {
+
+
+
+                    "osDisk": {
+                        "name": "[concat(parameters('vmNamePrefix'),copyIndex())]",
+                        "osType": "[variables('osType')]",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "image": {
+                            "uri": "[variables('userImageName')]"
+                        },
+
+                        "vhd": {
+                            "uri": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',concat(variables('OSDiskName'),copyIndex()),'.vhd')]"
+                        }
+                    }
+
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('nicName'),copyIndex()))]"
+                        }
+                    ]
+                }
+            },
+            "tags": {
+                "displayName": "VirtualMachine"
+            },
+            "type": "Microsoft.Compute/virtualMachines"
+        }
+    ]
+
+        }
+    
