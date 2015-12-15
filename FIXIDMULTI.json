@@ -1,0 +1,231 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "dnsNameForPublicIP": {
+            "type": "string",
+            "defaultValue": "rukmultin",
+            "metadata": {
+                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+            }
+        },
+        "dinmyllName": {
+            "type": "string",
+            "defaultValue": "reynoldsuk"
+        },
+        "dinmyllLocation": {
+            "type": "string",
+            "defaultValue": "West Europe",
+            "allowedValues": [
+                "East US",
+                "West US",
+                "West Europe",
+                "East Asia",
+                "South East Asia"
+            ]
+        },
+        "multivName": {
+            "type": "string",
+            "defaultValue": "RUK-MU-01"
+        },
+        "multivAdminUserName": {
+            "type": "string",
+            "defaultValue": "dinor"
+        },
+        "multivAdminPassword": {
+            "type": "securestring",
+            "defaultValue": "Corp123!"
+        },
+        "multivWindowsOSVersion": {
+            "type": "string",
+            "defaultValue": "2012-R2-Datacenter",
+            "allowedValues": [
+                "2008-R2-SP1",
+                "2012-Datacenter",
+                "2012-R2-Datacenter",
+                "Windows-Server-Technical-Preview"
+            ]
+        }
+    },
+    "variables": {
+        "location": "West Europe",
+        "imagePublisher": "MicrosoftWindowsServer",
+        "imageOffer": "WindowsServer",
+        "OSDiskName": "osdiskforwindowssimple",
+        "nicName": "external",
+        "nicName1": "internal",
+        
+        "subnetName": "DMZ",
+        "subnetName1": "LAN",
+        
+        
+        "storageAccountType": "Standard_LRS",
+        "publicIPAddressName": "pubip",
+        "publicIPAddressType": "Dynamic",      
+         "imageSKU": "2012-R2-Datacenter",
+        "virtualNetworkName": "ReynoldsUK",
+        "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+        "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",     
+        "nicSubnetRef1": "[concat(variables('VnetID'),'/subnets/', variables('subnetName1'))]",
+        "multivImagePublisher": "MicrosoftWindowsServer",
+        "multivImageOffer": "WindowsServer",
+        "multivOSDiskName": "mutlinic",
+        "multivVmSize": "Standard_D2_v2",        
+        "multivStorageAccountContainerName": "vhds"
+       
+
+    },
+    "resources": [
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('publicIPAddressName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+                "dnsSettings": {
+                    "domainNameLabel": "[parameters('dnsNameForPublicIP')]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[variables('nicName')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+                
+            ],
+            "properties": {
+
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+
+                        "properties": {
+                            "primary": "true",
+                            "privateIPAllocationMethod": "Dynamic",
+
+
+
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+                            },
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ]
+
+            }
+        },
+        {
+            "name": "[variables('nicName1')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "location": "[variables('location')]",
+            "apiVersion": "2015-05-01-preview",
+            "dependsOn": [
+                
+            ],
+            "tags": {
+                "displayName": "nic"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+
+                            "subnet": {
+                                "id": "[variables('nicSubnetRef1')]"
+                            }
+
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('multivName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "location": "[variables('location')]",
+            "apiVersion": "2015-05-01-preview",
+            "dependsOn": [
+               
+
+            ],
+            "tags": {
+                "displayName": "multiv"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('multivVmSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('multivName')]",
+                    "adminUsername": "[parameters('multivAdminUsername')]",
+                    "adminPassword": "[parameters('multivAdminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('multivImagePublisher')]",
+                        "offer": "[variables('multivImageOffer')]",
+                        "sku": "[variables('imageSKU')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "multivOSDisk",
+                        "vhd": {
+                            "uri": "[concat('http://', parameters('dinmyllName'), '.blob.core.windows.net/', variables('multivStorageAccountContainerName'), '/', variables('multivOSDiskName'), '.vhd')]"
+                        },
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "properties": {
+                                "primary": "true"
+
+                            },
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+                        },
+                        {
+              "properties": {
+                "primary": false
+              },
+
+                                
+                                    "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName1'))]"
+                                }
+
+                                ]
+
+                            }
+                        }
+                }
+                ]
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
