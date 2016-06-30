@@ -1,0 +1,107 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "osType": {
+      "type": "string",
+      "defaultValue": "Windows",
+      "allowedValues": [
+        "Windows",
+        "Ubuntu"
+      ],
+      "metadata": {
+        "description": "Type of OS to use for VMs: Windows or Ubuntu."
+      }
+    }
+  },
+  "variables": {
+    "vmStorageAccountContainerName": "vhds",
+    "vnetName": "nicvnet",
+    "sub1": "default",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetName'))]",
+    "backEndSubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('sub1'))]",
+    "stdStorageName": "testnic3962",
+    "vmname": "multinicvmdin",
+    "Vmsize": "Standard_A9",
+    "nicName": "nic1",
+    "nic2NamePrefix": "nic2",
+    "nic3NamePrefix": "nic3",
+    "OSDiskName": "dummy201653019544"
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('nicName')]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "Nic1"
+      },
+
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('backEndSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('vmname'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+       
+      ],
+      "tags": {
+        "displayName": "VMs - DB"
+      
+      },
+      "properties": {
+        
+        "hardwareProfile": {
+          "vmSize": "[variables('Vmsize')]"
+        },
+        
+        "storageProfile": {
+
+          "osDisk": {
+            "name": "vmosdisk",
+            "osType": "[parameters('osType')]",
+            "vhd": {
+              "uri": "[concat('http://',variables('stdStorageName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),'.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "Attach"
+          }
+         
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]",
+              "properties": { "primary": true }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nic2NamePrefix'))]",
+              "properties": { "primary": false }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nic3NamePrefix'))]",
+              
+             
+              "properties": { "primary": false }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
