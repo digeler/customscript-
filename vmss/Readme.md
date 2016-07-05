@@ -1,0 +1,1 @@
+[![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://github.com/digeler/customscript-/blob/master/vmss/vmssexistwindows.json)
